@@ -11,7 +11,7 @@ CFLAGS_Python = -fno-strict-aliasing -D_FORTIFY_SOURCE=2 -g -fstack-protector --
 	 -Werror=format-security  -DNDEBUG -g -fwrapv -O2 -Wall -Wstrict-prototypes \
 	 -Xlinker -export-dynamic -Wl,-O1 -Wl,-Bsymbolic-functions -fpermissive
 
-CFLAGS_Dlib = -Wreturn-type -DDLIB_JPEG_SUPPORT -DDLIB_USE_BLAS -DDLIB_USE_LAPACK -O3 -DNDEBUG -msse4.2
+CFLAGS_Dlib = -std=c++11 -Wreturn-type -DDLIB_JPEG_SUPPORT -DDLIB_USE_BLAS -DDLIB_USE_LAPACK -O3 -DNDEBUG -msse4.2
 
 LDLIBS = -lpthread -lnsl -lSM -lICE -lX11 -lXext -lpng -ljpeg -lopenblas -llapack
 

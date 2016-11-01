@@ -25,6 +25,80 @@ using namespace std;
 using namespace cv;
 
 /*-------------------------------------------------------------------*/
+
+double interocular_distance (
+    const full_object_detection& det
+)
+{
+    dlib::vector<double,2> l, r;
+    double cnt = 0;
+    // Find the center of the left eye by averaging the points around 
+    // the eye.
+    for (unsigned long i = 36; i <= 41; ++i) 
+    {
+        l += det.part(i);
+        ++cnt;
+    }
+    l /= cnt;
+
+    // Find the center of the right eye by averaging the points around 
+    // the eye.
+    cnt = 0;
+    for (unsigned long i = 42; i <= 47; ++i) 
+    {
+        r += det.part(i);
+        ++cnt;
+    }
+    r /= cnt;
+
+    // Now return the distance between the centers of the eyes
+    std::cout << "\n\tleft eye: " << l(0) << "," << l(1) << std::endl;
+    std::cout << "\n\tright eye: " << r(0) << "," << r(1) << std::endl;
+    return length(l-r);
+}
+
+dlib::vector<double,2> left_eye_center (
+    const full_object_detection& det
+)
+{
+    dlib::vector<double,2> l;
+    double cnt = 0;
+    // Find the center of the left eye by averaging the points around 
+    // the eye.
+    for (unsigned long i = 36; i <= 41; ++i) 
+    {
+        l += det.part(i);
+        ++cnt;
+    }
+    l /= cnt;
+
+    return l;
+}
+
+dlib::vector<double,2> right_eye_center (
+    const full_object_detection& det
+)
+{
+    dlib::vector<double,2> r;
+    double cnt = 0;
+
+    // Find the center of the right eye by averaging the points around 
+    // the eye.
+    cnt = 0;
+    for (unsigned long i = 42; i <= 47; ++i) 
+    {
+        r += det.part(i);
+        ++cnt;
+    }
+    r /= cnt;
+
+    return r;
+}
+
+
+/*-------------------------------------------------------------------*/
+
+/*-------------------------------------------------------------------*/
  
 chip_details get_face_chip_details (
     const full_object_detection& final_det,
@@ -41,7 +115,52 @@ chip_details get_face_chip_details (
             );
 
 
+    //std::cout << "\n\tinterocular_distance: " << interocular_distance(init_det) << std::endl;
+
+    // Average positions of face points 17-67
+    const double mean_face_shape_x[] = {
+        0.32857142857, 0.64285714285,
+        0.34285714285, 0.62857142857
+    };
+    const double mean_face_shape_y[] = {
+        0.32857142857, 0.32857142857,
+        0.65714285714, 0.65714285714 //2.3
+        //0.68571428571, 0.68571428571 //2.4
+        };
+
+
     std::vector<dlib::vector<double,2> > from_points, to_points;
+
+    dlib::vector<double,2> p;
+
+    p.x() = (padding + mean_face_shape_x[0]) / (2*padding+1);
+    p.y() = (padding + mean_face_shape_y[0]) / (2*padding+1);
+    from_points.push_back(p*size);
+    //p = left_eye_center(final_det);
+    //p.x() -= final_det.get_rect().left();
+    //p.y() -= final_det.get_rect().top();
+    to_points.push_back(left_eye_center(final_det));
+
+    p.x() = (padding + mean_face_shape_x[1]) / (2*padding+1);
+    p.y() = (padding + mean_face_shape_y[1]) / (2*padding+1);
+    from_points.push_back(p*size);
+    to_points.push_back(right_eye_center(final_det));
+
+    p.x() = (padding + mean_face_shape_x[2]) / (2*padding+1);
+    p.y() = (padding + mean_face_shape_y[2]) / (2*padding+1);
+    from_points.push_back(p*size);
+    to_points.push_back(final_det.part(48));
+
+    p.x() = (padding + mean_face_shape_x[3]) / (2*padding+1);
+    p.y() = (padding + mean_face_shape_y[3]) / (2*padding+1);
+    from_points.push_back(p*size);
+    to_points.push_back(final_det.part(54));
+
+    return chip_details(from_points, to_points, chip_dims(size,size));
+
+    /*
+     * used for affine with whole shape
+     *
     for (unsigned long i = 0; i < final_det.num_parts(); i++)
     {
             dlib::vector<double,2> p;
@@ -60,6 +179,7 @@ chip_details get_face_chip_details (
             to_points.push_back(final_det.part(i));
     }
     return chip_details(from_points, to_points, chip_dims(size,size));
+    */
 }
 
 std::vector<chip_details> get_face_chip_details (
@@ -185,9 +305,9 @@ int main(int argc, char const *argv[])
 				// each face we detected.
 				std::vector<full_object_detection> shapes;
 				//extract face config
-				unsigned long size = 60;
+				unsigned long size = 80;
 				//double padding = 0.005;
-				double padding = 0.1;
+				double padding = 0.0;
 
 
 				full_object_detection shape = sp(img, dets[max_face_idx]);
